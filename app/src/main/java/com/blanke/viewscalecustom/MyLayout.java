@@ -1,7 +1,9 @@
 package com.blanke.viewscalecustom;
 
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
@@ -43,6 +45,12 @@ public class MyLayout extends FrameLayout {
     public MyLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         initViewDragHelper();
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+//                animChangeViewSize(getChildAt(0), 1.1F);
+            }
+        }, 3000);
     }
 
     private void initViewDragHelper() {
@@ -136,6 +144,15 @@ public class MyLayout extends FrameLayout {
         rect.bottom += mMinDivWidth;
     }
 
+    public void addRoom(Room room) {
+        MyView view = new MyView(getContext());
+        view.setBackgroundColor(Color.YELLOW);
+        addView(view, room.getWidth(), room.getHeight());
+        view.layout(room.getLeft(), room.getTop(),
+                room.getLeft() + room.getWidth(),
+                room.getTop() + room.getHeight());
+    }
+
     private boolean isConvertView(View view) {
         Rect sourceRect = new Rect();
         Rect tempRect = new Rect();
@@ -166,12 +183,37 @@ public class MyLayout extends FrameLayout {
         }
     }
 
-    private void chageViewSize(View v, int scale) {
-        v.layout(v.getLeft() - scale, v.getTop() - scale, v.getRight() + scale, v.getBottom() + scale);
+    private void animChangeViewSize(final View v, final float scale) {
+        final int startX = v.getWidth();
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, scale - 1);
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                float value = (float) animation.getAnimatedValue();
+                Log.d("Mylayout view anim ", value + "，" + startX + "," + startX * value);
+                chageViewSize(v, (int) (startX * value));
+            }
+        });
+        valueAnimator.start();
+    }
+
+    private void chageViewSize(View v, int dx) {
+//        v.layout(v.getLeft() - dx, v.getTop() - dx, v.getRight() + dx, v.getBottom() + dx);
+        int w = v.getWidth() + dx;
+        int h = v.getHeight() + dx;
+//        v.invalidate();
+//        RelativeLayout.LayoutParams lp = (LayoutParams) v.getLayoutParams();
+//        Log.d("Mylayout view anim ", dx + "");
+//        lp.width += dx;
+//        lp.height += dx;
+//        v.requestLayout();
+//        v.setLayoutParams(lp);
+//        v.postInvalidate();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        View view = getChildAt(0);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             baseValue = 0;
             last_x = event.getRawX();
@@ -188,12 +230,11 @@ public class MyLayout extends FrameLayout {
                         float scale = value - baseValue;// 当前两点间的距离除以手指落下时两点间的距离就是需要缩放的比例。
                         Log.d("onTouchEvent", scale + "");
                         int d = (int) (scale / 200);
-                        View view = getChildAt(0);
+
                         mLastPoint = new Point();
                         mLastPoint.set(view.getLeft(), view.getTop());
                         mNextPoint.set(view.getLeft() - d, view.getTop() - d);
                         chageViewSize(view, d);
-                        mDragCallBack.onViewReleased(view, 0, 0);
                     }
                 }
             } else if (event.getPointerCount() == 1) {
